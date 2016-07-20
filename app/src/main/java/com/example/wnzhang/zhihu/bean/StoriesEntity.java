@@ -34,6 +34,8 @@ public class StoriesEntity {
         return images;
     }
 
-
-
+    @Override
+    public String toString() {
+        return "id=" + id + " title=" + title;
+    }
 }

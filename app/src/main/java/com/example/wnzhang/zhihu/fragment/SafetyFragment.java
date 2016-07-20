@@ -6,6 +6,10 @@ import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.View;
 
+import com.example.wnzhang.zhihu.bean.RootEntity;
+
+import rx.Observable;
+
 /**
  * Created by wnzhang on 16-7-15.
  */
@@ -19,5 +23,10 @@ public class SafetyFragment extends BaseFragmet {
                 loadDatas(service.getSafety());
             }
         });
+    }
+
+    @Override
+    public Observable<RootEntity> getMoreData() {
+        return null;
     }
 }

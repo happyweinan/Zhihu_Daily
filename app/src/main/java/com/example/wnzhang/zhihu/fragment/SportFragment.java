@@ -5,6 +5,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.View;
 
+import com.example.wnzhang.zhihu.bean.RootEntity;
+
+import rx.Observable;
+
 /**
  * Created by wnzhang on 16-7-15.
  */
@@ -20,5 +24,10 @@ public class SportFragment extends BaseFragmet {
                 loadDatas(service.getSport());
             }
         });
+    }
+
+    @Override
+    public Observable<RootEntity> getMoreData() {
+        return null;
     }
 }

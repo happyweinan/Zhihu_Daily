@@ -6,6 +6,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,11 +31,12 @@ import rx.schedulers.Schedulers;
 /**
  * Created by wnzhang on 16-7-14.
  */
-public class BaseFragmet extends Fragment {
+public abstract class BaseFragmet extends Fragment {
     private static final String BASE_URL = "http://news-at.zhihu.com";
     protected DataService service;
     protected SwipeRefreshLayout mSwipeLayout;
     private RecyclerView mRecyclerView;
+    private boolean mIsLoading = false;
     private ArrayList<StoriesEntity> mEntities = new ArrayList<StoriesEntity>();
 
     @Nullable
@@ -45,7 +47,27 @@ public class BaseFragmet extends Fragment {
         mSwipeLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_layout);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                int totalCount = layoutManager.getItemCount();
+                int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
+//                Log.d("zwn", "totalCount=" + totalCount + " lastVisibleItem=" + lastVisibleItem);
+                if (!mIsLoading && totalCount - 1 == lastVisibleItem) {
+                    loadMore(getMoreData());
+                    mIsLoading = true;
+                }
+            }
+        });
         return view;
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        mSwipeLayout.setRefreshing(true);
     }
 
     public DataService getService() {
@@ -83,6 +105,38 @@ public class BaseFragmet extends Fragment {
                 } else {
                     mRecyclerView.getAdapter().notifyDataSetChanged();
                 }
+            }
+        });
+    }
+
+    public abstract Observable<RootEntity> getMoreData();
+
+    public void loadMore(Observable<RootEntity> observable) {
+        if (null == observable) {
+            return;
+        }
+        observable.observeOn(AndroidSchedulers.mainThread()).subscribeOn(Schedulers.io()).map(new Func1<RootEntity, ArrayList<StoriesEntity>>() {
+            @Override
+            public ArrayList<StoriesEntity> call(RootEntity rootEntity) {
+                return rootEntity.getStories();
+            }
+        }).subscribe(new Subscriber<ArrayList<StoriesEntity>>() {
+            @Override
+            public void onCompleted() {
+                mIsLoading = false;
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                mIsLoading = false;
+            }
+
+            @Override
+            public void onNext(ArrayList<StoriesEntity> storiesEntities) {
+                if (null != storiesEntities) {
+                    mEntities.addAll(storiesEntities);
+                }
+                mRecyclerView.getAdapter().notifyDataSetChanged();
             }
         });
     }
