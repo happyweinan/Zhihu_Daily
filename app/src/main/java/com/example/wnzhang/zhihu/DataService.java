@@ -1,6 +1,7 @@
 package com.example.wnzhang.zhihu;
 
 import com.example.wnzhang.zhihu.bean.RootEntity;
+import com.example.wnzhang.zhihu.bean.StoryDetailsEntity;
 
 import retrofit2.http.GET;
 import retrofit2.http.Path;
@@ -15,7 +16,10 @@ public interface DataService {
     Observable<RootEntity> getLatestNews();
 
     @GET("/api/4/news/before/{date}")
-    Observable<RootEntity> getNewsByDate(@Path("date")String date);
+    Observable<RootEntity> getNewsByDate(@Path("date") String date);
+
+    @GET("/api/4/news/{id}")
+    Observable<StoryDetailsEntity> getNewsDetail(@Path("id") int id);
 
     //互联网安全
     @GET("/api/4/theme/10")
