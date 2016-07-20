@@ -2,6 +2,7 @@ package com.example.wnzhang.zhihu.fragment;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.View;
 
 /**
@@ -11,5 +12,11 @@ public class InterestFragment extends BaseFragmet {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         loadDatas(service.getInterest());
+        mSwipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                loadDatas(service.getInterest());
+            }
+        });
     }
 }

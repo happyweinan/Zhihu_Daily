@@ -3,6 +3,7 @@ package com.example.wnzhang.zhihu.fragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -32,13 +33,16 @@ import rx.schedulers.Schedulers;
 public class BaseFragmet extends Fragment {
     private static final String BASE_URL = "http://news-at.zhihu.com";
     protected DataService service;
+    protected SwipeRefreshLayout mSwipeLayout;
     private RecyclerView mRecyclerView;
+    private ArrayList<StoriesEntity> mEntities = new ArrayList<StoriesEntity>();
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         service = getService();
-        View view =  inflater.inflate(R.layout.fragment_base, container, false);
+        View view = inflater.inflate(R.layout.fragment_base, container, false);
+        mSwipeLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_layout);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         return view;
@@ -60,17 +64,25 @@ public class BaseFragmet extends Fragment {
         }).subscribe(new Subscriber<ArrayList<StoriesEntity>>() {
             @Override
             public void onCompleted() {
-
+                mSwipeLayout.setRefreshing(false);
             }
 
             @Override
             public void onError(Throwable e) {
-
+                mSwipeLayout.setRefreshing(false);
             }
 
             @Override
             public void onNext(ArrayList<StoriesEntity> storiesEntities) {
-                mRecyclerView.setAdapter(new NewsAdapter(storiesEntities, getActivity()));
+                mEntities.clear();
+                if (null != storiesEntities) {
+                    mEntities.addAll(storiesEntities);
+                }
+                if (null == mRecyclerView.getAdapter()) {
+                    mRecyclerView.setAdapter(new NewsAdapter(mEntities, getActivity()));
+                } else {
+                    mRecyclerView.getAdapter().notifyDataSetChanged();
+                }
             }
         });
     }
