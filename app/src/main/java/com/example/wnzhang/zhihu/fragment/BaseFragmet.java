@@ -54,7 +54,6 @@ public abstract class BaseFragmet extends Fragment {
                 LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
                 int totalCount = layoutManager.getItemCount();
                 int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
-//                Log.d("zwn", "totalCount=" + totalCount + " lastVisibleItem=" + lastVisibleItem);
                 if (!mIsLoading && totalCount - 1 == lastVisibleItem) {
                     loadMore(getMoreData());
                     mIsLoading = true;

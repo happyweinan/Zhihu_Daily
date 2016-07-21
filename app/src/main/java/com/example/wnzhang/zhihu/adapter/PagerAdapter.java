@@ -28,8 +28,8 @@ public class PagerAdapter extends FragmentPagerAdapter {
         mFragments.add(new SportFragment());
 
         titleList.add("今日头条");
-        titleList.add("互联网安全");
         titleList.add("不准无聊");
+        titleList.add("互联网安全");
         titleList.add("体育日报");
     }
 
