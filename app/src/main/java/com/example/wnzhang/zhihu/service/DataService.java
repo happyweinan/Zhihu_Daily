@@ -1,4 +1,4 @@
-package com.example.wnzhang.zhihu;
+package com.example.wnzhang.zhihu.service;
 
 import com.example.wnzhang.zhihu.bean.RootEntity;
 import com.example.wnzhang.zhihu.bean.StoryDetailsEntity;

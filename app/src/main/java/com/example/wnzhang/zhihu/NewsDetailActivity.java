@@ -6,20 +6,12 @@ import android.view.MenuItem;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.example.wnzhang.zhihu.bean.StoryDetailsEntity;
+import com.example.wnzhang.zhihu.presenter.DetailPresenter;
+import com.example.wnzhang.zhihu.presenter.IDetailPresenter;
 
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
-import retrofit2.converter.gson.GsonConverterFactory;
-import rx.Observable;
-import rx.Subscriber;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
-
-public class NewsDetailActivity extends AppCompatActivity {
-    private static final String BASE_URL = "http://news-at.zhihu.com";
+public class NewsDetailActivity extends AppCompatActivity implements IDetailPresenter.View {
     private WebView mWebView;
+    private IDetailPresenter mPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,38 +34,8 @@ public class NewsDetailActivity extends AppCompatActivity {
             }
         });
         int id = getIntent().getIntExtra("id", 0);
-        loadDatas(getService().getNewsDetail(id));
-    }
-
-    public DataService getService() {
-        Retrofit retrofit = new Retrofit.Builder().addConverterFactory
-                (GsonConverterFactory.create()).addCallAdapterFactory(RxJavaCallAdapterFactory
-                .create()).baseUrl(BASE_URL).build();
-        return retrofit.create(DataService.class);
-    }
-
-    public void loadDatas(Observable<StoryDetailsEntity> observable) {
-        observable.observeOn(AndroidSchedulers.mainThread()).subscribeOn(Schedulers.io()).map(new Func1<StoryDetailsEntity, String>() {
-            @Override
-            public String call(StoryDetailsEntity storyDetailsEntity) {
-                return HtmlUtils.structHtml(storyDetailsEntity);
-            }
-        }).subscribe(new Subscriber<String>() {
-            @Override
-            public void onCompleted() {
-
-            }
-
-            @Override
-            public void onError(Throwable e) {
-
-            }
-
-            @Override
-            public void onNext(String str) {
-                mWebView.loadDataWithBaseURL("file:///android_asset/", str, "text/html", "utf-8", null);
-            }
-        });
+        mPresenter = new DetailPresenter(this);
+        mPresenter.loadDatas(id);
     }
 
     @Override
@@ -84,5 +46,10 @@ public class NewsDetailActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void updateUi(String str) {
+        mWebView.loadDataWithBaseURL("file:///android_asset/", str, "text/html", "utf-8", null);
     }
 }

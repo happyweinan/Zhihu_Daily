@@ -6,60 +6,36 @@ import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.example.wnzhang.zhihu.DataService;
 import com.example.wnzhang.zhihu.R;
 import com.example.wnzhang.zhihu.adapter.NewsAdapter;
-import com.example.wnzhang.zhihu.bean.RootEntity;
 import com.example.wnzhang.zhihu.bean.StoriesEntity;
+import com.example.wnzhang.zhihu.presenter.HomePresenter;
+import com.example.wnzhang.zhihu.presenter.IHomePresenter;
 
 import java.util.ArrayList;
-
-import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
-import retrofit2.converter.gson.GsonConverterFactory;
-import rx.Observable;
-import rx.Subscriber;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 /**
  * Created by wnzhang on 16-7-14.
  */
-public abstract class BaseFragmet extends Fragment {
-    private static final String BASE_URL = "http://news-at.zhihu.com";
-    protected DataService service;
+public abstract class BaseFragmet extends Fragment implements IHomePresenter.View{
+
     protected SwipeRefreshLayout mSwipeLayout;
     private RecyclerView mRecyclerView;
-    private boolean mIsLoading = false;
+    protected IHomePresenter presenter;
     private ArrayList<StoriesEntity> mEntities = new ArrayList<StoriesEntity>();
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        service = getService();
         View view = inflater.inflate(R.layout.fragment_base, container, false);
         mSwipeLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipe_layout);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                LinearLayoutManager layoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                int totalCount = layoutManager.getItemCount();
-                int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
-                if (!mIsLoading && totalCount - 1 == lastVisibleItem) {
-                    loadMore(getMoreData());
-                    mIsLoading = true;
-                }
-            }
-        });
+        presenter = new HomePresenter(this);
         return view;
     }
 
@@ -67,76 +43,32 @@ public abstract class BaseFragmet extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mSwipeLayout.setRefreshing(true);
-    }
-
-    public DataService getService() {
-        Retrofit retrofit = new Retrofit.Builder().addConverterFactory
-                (GsonConverterFactory.create()).addCallAdapterFactory(RxJavaCallAdapterFactory
-                .create()).baseUrl(BASE_URL).build();
-        return retrofit.create(DataService.class);
-    }
-
-    public void loadDatas(Observable<RootEntity> observable) {
-        observable.observeOn(AndroidSchedulers.mainThread()).subscribeOn(Schedulers.io()).map(new Func1<RootEntity, ArrayList<StoriesEntity>>() {
+        presenter.loadDatas(getViewType());
+        mSwipeLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
-            public ArrayList<StoriesEntity> call(RootEntity rootEntity) {
-                return rootEntity.getStories();
-            }
-        }).subscribe(new Subscriber<ArrayList<StoriesEntity>>() {
-            @Override
-            public void onCompleted() {
-                mSwipeLayout.setRefreshing(false);
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                mSwipeLayout.setRefreshing(false);
-            }
-
-            @Override
-            public void onNext(ArrayList<StoriesEntity> storiesEntities) {
-                mEntities.clear();
-                if (null != storiesEntities) {
-                    mEntities.addAll(storiesEntities);
-                }
-                if (null == mRecyclerView.getAdapter()) {
-                    mRecyclerView.setAdapter(new NewsAdapter(mEntities, getActivity()));
-                } else {
-                    mRecyclerView.getAdapter().notifyDataSetChanged();
-                }
+            public void onRefresh() {
+                presenter.loadDatas(getViewType());
             }
         });
     }
 
-    public abstract Observable<RootEntity> getMoreData();
-
-    public void loadMore(Observable<RootEntity> observable) {
-        if (null == observable) {
-            return;
+    @Override
+    public void updateUi(ArrayList<StoriesEntity> storiesEntities) {
+        mEntities.clear();
+        if (null != storiesEntities) {
+            mEntities.addAll(storiesEntities);
         }
-        observable.observeOn(AndroidSchedulers.mainThread()).subscribeOn(Schedulers.io()).map(new Func1<RootEntity, ArrayList<StoriesEntity>>() {
-            @Override
-            public ArrayList<StoriesEntity> call(RootEntity rootEntity) {
-                return rootEntity.getStories();
-            }
-        }).subscribe(new Subscriber<ArrayList<StoriesEntity>>() {
-            @Override
-            public void onCompleted() {
-                mIsLoading = false;
-            }
-
-            @Override
-            public void onError(Throwable e) {
-                mIsLoading = false;
-            }
-
-            @Override
-            public void onNext(ArrayList<StoriesEntity> storiesEntities) {
-                if (null != storiesEntities) {
-                    mEntities.addAll(storiesEntities);
-                }
-                mRecyclerView.getAdapter().notifyDataSetChanged();
-            }
-        });
+        if (null == mRecyclerView.getAdapter()) {
+            mRecyclerView.setAdapter(new NewsAdapter(mEntities, getActivity()));
+        } else {
+            mRecyclerView.getAdapter().notifyDataSetChanged();
+        }
     }
+
+    @Override
+    public void stopRefreshing() {
+        mSwipeLayout.setRefreshing(false);
+    }
+
+    protected abstract String getViewType();
 }
